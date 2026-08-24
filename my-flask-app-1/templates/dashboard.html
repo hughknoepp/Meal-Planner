@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-<h1>Welcome, {{ user.username }}!</h1>
+<div id="dashboard-hello">
+    <h1>Welcome, {{ user.username }}!</h1>
+    <a href="{{ url_for('food_search') }}" class="btn-link">Go to Food Search</a>
+</div>
 {% endblock %}

@@ -46,6 +46,13 @@ nav a:hover {
         text-align: center;
     }
 }
+
+#dashboard-hello {
+    background: #E0DEBF;
+    h1 {
+        font-family:'Courier New', Courier, monospace;
+    }
+}
     
 
 /* --- Headings --- */
@@ -100,4 +107,19 @@ button:hover {
     border-radius: 4px;
     margin: 0 0 16px;
     text-align: center;
+}
+
+.btn-link {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007BFF;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-family: sans-serif;
+    text-align: center;
+}
+
+.btn-link:hover {
+    background-color: #0056b3;
 }
