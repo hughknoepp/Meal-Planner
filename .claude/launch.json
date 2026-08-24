@@ -1,0 +1,10 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "flask-app",
+      "url": "http://127.0.0.1:5050",
+      "port": 5050
+    }
+  ]
+}
