@@ -1,0 +1,15 @@
+# Virtual environment (created by venv inside this folder)
+bin/
+lib/
+include/
+var/
+pyvenv.cfg
+lib64
+
+# Python
+__pycache__/
+*.pyc
+
+# Instance data (e.g. sqlite db)
+instance/
+*.db

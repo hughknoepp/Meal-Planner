@@ -1,0 +1,103 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+}
+
+main, .container {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background-color: #333;
+    color: #fff;
+}
+
+nav a {
+    color: #fff;
+    text-decoration: none;
+    margin-left: 12px;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+#welcome {
+    img {
+        width: 100%;
+        border-radius: 8px;
+        margin: 0 auto 20px;
+    }
+    p {
+        text-align: center;
+    }
+}
+    
+
+/* --- Headings --- */
+h1 {
+    margin: 0 0 20px;
+    text-align: center;
+}
+
+/* --- Forms --- */
+form {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+input {
+    padding: 10px 12px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+input:focus {
+    outline: none;
+    border-color: #333;
+}
+
+button {
+    padding: 10px 16px;
+    font-size: 1rem;
+    background-color: #333;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: fit-content;
+}
+
+button:hover {
+    background-color: #555;
+}
+
+/* --- Flash messages --- */
+.flash {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    padding: 10px 14px;
+    border-radius: 4px;
+    margin: 0 0 16px;
+    text-align: center;
+}
