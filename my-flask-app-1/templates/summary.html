@@ -9,5 +9,22 @@
         <li><span>Carbs</span><span>{{ '%.1f'|format(totals.carbs_g) }} g</span></li>
         <li><span>Fat</span><span>{{ '%.1f'|format(totals.fat_g) }} g</span></li>
     </ul>
+    <h1>Get Rolling Averages</h1>
+    <form method="GET" action="{{ url_for('rolling_average', days=1)}}">
+        <input type="number" name="days" placeholder="How many days?" min="1" step="1" required>
+        <button type="submit">Get Averages</button>
+    </form>
+    {% if averages %}
+    <h2>Rolling Averages for {{ num_days }} Days</h2>
+    <ul>
+        <li><span>Calories</span><span>{{ '%.0f'|format(averages.calories) }}</span></li>
+        <li><span>Protein</span><span>{{ '%.1f'|format(averages.protein_g) }} g</span></li>
+        <li><span>Carbs</span><span>{{ '%.1f'|format(averages.carbs_g) }} g</span></li>
+        <li><span>Fat</span><span>{{ '%.1f'|format(averages.fat_g) }} g</span></li>
+    </ul>
+    {% elif averages is not none %}
+    <h2>No Data Available</h2>
+    <p>No rolling average data available for the selected time period.</p>
+    {% endif %}
 </div>
 {% endblock %}

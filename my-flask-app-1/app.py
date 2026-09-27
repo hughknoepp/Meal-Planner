@@ -4,7 +4,7 @@ from config import Config
 from models import db, User, MealLog, MealItem
 from usda import search_food, get_food_details
 from datetime import datetime, date as date_type
-from nutrition import get_daily_totals
+from nutrition import get_daily_totals, get_rolling_average
 import requests
 
 app = Flask(__name__)
@@ -159,6 +159,16 @@ def daily_summary(log_date=None):
     parsed_date = datetime.strptime(log_date, '%Y-%m-%d').date() if log_date else date_type.today()
     totals = get_daily_totals(current_user.id, parsed_date)
     return render_template('summary.html', totals=totals, date=parsed_date)
+
+@app.route('/log/summary/average/<int:days>')
+@login_required
+def rolling_average(days):
+    if days <= 0:
+        flash ('Days must be a positive integer')
+        return redirect(url_for('daily_summary'))
+
+    averages = get_rolling_average(current_user.id, days)
+    return render_template('summary.html', averages=averages, num_days=days)
 
 def delete_meal_item(item_id, user_id):
     item = MealItem.query.get(item_id)
