@@ -3,6 +3,16 @@
 {% block content %}
 <div id="summary">
     <h1>Summary for {{ date.strftime('%B %d, %Y') }}</h1>
+    <h2>Today's Items</h2>
+    {% if not items %}
+        <p>No items logged for today.</p>
+    {% else %}
+        <ul class="items-list">
+            {% for item in items %}
+                <li>{{ item.food_name }}: {{ item.quantity_g }}g</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
     <ul class="totals-list">
         <li><span>Calories</span><span>{{ '%.0f'|format(totals.calories) }}</span></li>
         <li><span>Protein</span><span>{{ '%.1f'|format(totals.protein_g) }} g</span></li>

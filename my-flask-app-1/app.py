@@ -158,7 +158,12 @@ def add_food(fdc_id):
 def daily_summary(log_date=None):
     parsed_date = datetime.strptime(log_date, '%Y-%m-%d').date() if log_date else date_type.today()
     totals = get_daily_totals(current_user.id, parsed_date)
-    return render_template('summary.html', totals=totals, date=parsed_date)
+    meal_log = MealLog.query.filter_by(user_id=current_user.id, date=parsed_date).first()
+    if meal_log:
+        items = meal_log.items
+    else:
+        items = []
+    return render_template('summary.html', totals=totals, date=parsed_date, items=items)
 
 @app.route('/log/summary/average/<int:days>')
 @login_required
