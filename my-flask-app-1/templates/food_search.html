@@ -3,7 +3,25 @@
 {% block content %}
 <div id="food-search">
     <h1>Food Search</h1>
-    <h3>Search for a select a food to add to your daily log.</h3>
-    <p>This will add to your daily calories, as well as your protein, fat, and carbohydrate intake.</p>
+    <form method="GET" action="{{ url_for('food_search') }}">
+        <input type="text" name="q" placeholder="Search for a food..." value="{{ request.args.get('q', '') }}">
+        <button type="submit">Search</button>
+    </form>
+
+    {% if results %}
+    <ul class="food-results">
+        {% for food in results %}
+        <li class="food-item">
+            <span class="food-name">{{ food.description }}</span>
+            <form method="POST" action="{{ url_for('add_food', fdc_id=food.fdcId) }}" class="add-form">
+                <input type="number" name="quantity_g" placeholder="grams(total)" min="1" step="1" required>
+                <button type="submit">Add</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+    {% elif request.args.get('q') %}
+    <p>No results found for "{{ request.args.get('q') }}".</p>
+    {% endif %}
 </div>
 {% endblock %}

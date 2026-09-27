@@ -6,6 +6,7 @@ from datetime import date as date_type
 db = SQLAlchemy()
 
 class User(UserMixin, db.Model):
+    """Each User has an ID, username, email, and password (hashed for privacy & security)"""
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
@@ -18,12 +19,16 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 class MealLog(db.Model):
+    """Each MealLog instance has an associated id, user_id (from User), 
+    date, and items (from MealItem, this includes food details)"""
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     date = db.Column(db.Date, default=date_type.today, nullable=False)
     items = db.Relationship('MealItem', backref='meal_log', cascade='all, delete-orphan')
 
 class MealItem(db.Model):
+    """Each MealItem instance has an associated id, meal_log_id (from MealLog), 
+    food name, FDC ID, # grams, calories, protein(g), fat(g), carbs(g)"""
     id = db.Column(db.Integer, primary_key=True)
     meal_log_id = db.Column(db.Integer, db.ForeignKey('meal_log.id'), nullable=False)
     food_name = db.Column(db.String(200), nullable=False)

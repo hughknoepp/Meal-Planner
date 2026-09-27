@@ -3,13 +3,16 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from config import Config
 from models import db, User, MealLog, MealItem
 from usda import search_food, get_food_details
-from datetime import date as date_type
+from datetime import datetime, date as date_type
+from nutrition import get_daily_totals
+import requests
 
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
 
 login_manager = LoginManager()
+login_manager.login_view = 'login'
 login_manager.init_app(app)
 
 @login_manager.user_loader
@@ -76,8 +79,13 @@ def dashboard():
 @app.route('/log/search')
 @login_required
 def food_search():
-    query = request.get('q', '')
-    results = search_food(query) if query else []
+    query = request.args.get('q', '')
+    results = []
+    if query:
+        try:
+            results = search_food(query)
+        except requests.exceptions.RequestException:
+            flash('Food search is unavailable right now. Please try again later.')
     return render_template('food_search.html', results=results)
 
 NUTRIENT_MAP = {
@@ -112,7 +120,11 @@ def add_food(fdc_id):
         flash('Quantity must be greater than zero')
         return redirect(url_for('food_search'))
     
-    food = get_food_details(fdc_id)
+    try:
+        food = get_food_details(fdc_id)
+    except requests.exceptions.RequestException:
+        flash('Could not fetch food details. Please try again later.')
+        return redirect(url_for('food_search'))
     per_100g = extract_nutrients(food)
     scale = quantity_g / 100
 
@@ -139,6 +151,33 @@ def add_food(fdc_id):
 
     flash(f"Added {item.food_name} to today's log")
     return redirect(url_for('dashboard'))
+
+@app.route('/log/summary')
+@app.route('/log/summary/<log_date>')
+@login_required
+def daily_summary(log_date=None):
+    parsed_date = datetime.strptime(log_date, '%Y-%m-%d').date() if log_date else date_type.today()
+    totals = get_daily_totals(current_user.id, parsed_date)
+    return render_template('summary.html', totals=totals, date=parsed_date)
+
+def delete_meal_item(item_id, user_id):
+    item = MealItem.query.get(item_id)
+    if item is None:
+        return False
+    if item.meal_log.user_id != user_id:
+        return False
+    db.session.delete(item)
+    db.session.commit()
+    return True
+
+@app.route('/log/remove/<int:item_id>', methods=['POST'])
+@login_required
+def remove_food(item_id):
+    if delete_meal_item(item_id, user_id=current_user.id):
+        flash('Item removed')
+    else:
+        flash('Could not remove that item')
+    return redirect(url_for('daily_summary'))
 
 if __name__ == '__main__':
     app.run(debug=True, port=5050)

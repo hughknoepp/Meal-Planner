@@ -13,3 +13,6 @@ __pycache__/
 # Instance data (e.g. sqlite db)
 instance/
 *.db
+
+# Secrets
+.env
