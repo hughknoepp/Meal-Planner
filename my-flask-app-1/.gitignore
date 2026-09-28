@@ -14,5 +14,10 @@ __pycache__/
 instance/
 *.db
 
+# requests_cache files
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
 # Secrets
 .env
