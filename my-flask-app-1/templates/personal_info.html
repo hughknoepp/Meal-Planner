@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Personal Info{% endblock %}
+{% block content %}
+<div id="personal-info">
+    <h1>Biometric Information</h1>
+    <form method="POST" action="{{ url_for('personal_info')}}">
+        <input type="radio" id="metric" name="unit_system" value="metric" {% if selected_unit == 'metric' %}checked{% endif %}>
+        <label for="metric">Metric (kg, m)</label>
+        <input type="radio" id="imperial" name="unit_system" value="imperial" {% if selected_unit == 'imperial' %}checked{% endif %}>
+        <label for="imperial">Imperial (lbs, in)</label>
+        <br><br>
+        <label for="weight">Weight ({{ 'kg' if selected_unit == 'metric' else 'lbs' }}):</label>
+        <input type="number" id="weight" name="weight" step="{% if selected_unit == 'metric' %}0.1{% else %}0.5{% endif %}" 
+        min="0" max="{% if selected_unit == 'metric' %}635{% else %}1399{% endif %}" value="{{ weight }}">
+        <br><br>
+        <label for="height">Height ({{ 'm' if selected_unit == 'metric' else 'in' }}):</label>
+        <input type="number" id="height" name="height" step="{% if selected_unit == 'metric' %}0.01{% else %}0.25{% endif %}" 
+        min="0" max="{% if selected_unit == 'metric' %}2.72{% else %}107{% endif %}" value="{{ height }}">
+        <button type="submit">Update</button>
+    </form>
+    <div id="bmi-display">
+        {% if bmi is not none %}
+            <h2>Your BMI: {{ bmi }}</h2>
+            <p>Category: 
+                {% if bmi < 18.5 %}
+                    Underweight
+                {% elif bmi < 24.9 %}
+                    Normal weight
+                {% elif bmi < 29.9 %}
+                    Overweight
+                {% else %}
+                    Obesity
+                {% endif %}
+            </p>
+        {% else %}
+            <p>Please enter valid weight and height to calculate BMI.</p>
+        {% endif %}
+    </div>
+</div>

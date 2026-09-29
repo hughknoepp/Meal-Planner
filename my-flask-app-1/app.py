@@ -4,7 +4,7 @@ from config import Config
 from models import db, User, MealLog, MealItem
 from usda import search_food, get_food_details
 from datetime import datetime, date as date_type
-from nutrition import get_daily_totals, get_rolling_average
+from nutrition import get_daily_totals, get_rolling_average, calculate_bmi
 import requests
 
 app = Flask(__name__)
@@ -75,6 +75,31 @@ def logout():
 @login_required
 def dashboard():
     return render_template('dashboard.html', user=current_user)
+
+@app.route('/personal-info', methods=['GET', 'POST'])
+@login_required
+def personal_info():
+    bmi = None
+    selected_unit = "metric"
+    if request.method == 'POST':
+        weight = float(request.form['weight'])
+        height = float(request.form['height'])
+        unit = request.form.get('unit_system', 'metric')
+        selected_unit = unit
+
+        if unit == 'imperial':
+            weight_kg = weight * 0.453592
+            height_m = height * 0.0254
+        else:
+            weight_kg = weight
+            height_m = height
+
+        try:
+            bmi = calculate_bmi(weight_kg, height_m)
+        except AssertionError:
+            flash('Invalid weight or height values. Please ensure they are within reasonable ranges.')
+            return redirect(url_for('personal_info'))
+    return render_template('personal_info.html', bmi=bmi, selected_unit=selected_unit)
 
 @app.route('/log/search')
 @login_required

@@ -39,3 +39,10 @@ def get_rolling_average(user_id, days=7):
     }
 
     return averages
+
+def calculate_bmi(weight_kg, height_m):
+    """Calculates BMI given weight in kilograms and height in meters. Requires that `0 < weight_kg < 635` and `0 < height_m < 2.72`."""
+    assert 0 < weight_kg < 635
+    assert 0 < height_m < 2.72
+    bmi = weight_kg / (height_m ** 2)
+    return round(bmi, 2)
