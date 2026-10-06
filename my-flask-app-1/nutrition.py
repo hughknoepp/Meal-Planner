@@ -46,3 +46,25 @@ def calculate_bmi(weight_kg, height_m):
     assert 0 < height_m < 2.72
     bmi = weight_kg / (height_m ** 2)
     return round(bmi, 2)
+
+def calculate_bmr(weight_kg, height_m, age, gender):
+    assert 0 < weight_kg <= 635
+    assert 0 < height_m <= 2.72
+    assert 1 <= age <= 120
+
+    if gender == 'male':
+        bmr = (10 * weight_kg) + (6.25 * height_m * 100) - (5 * age) + 5
+    elif gender == 'female':
+        bmr = (10 * weight_kg) + (6.25 * height_m * 100) - (5 * age) - 161
+    
+    return bmr
+
+def calculate_tdee(bmr, activity_level):
+    if activity_level == 'sedentary':
+        return bmr * 1.2
+    elif activity_level == 'lightly_active':
+        return bmr * 1.375
+    elif activity_level == 'moderately_active':
+        return bmr * 1.55
+    else: # 'very_active'
+        return bmr * 1.725

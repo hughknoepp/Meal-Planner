@@ -4,7 +4,7 @@ from config import Config
 from models import db, User, MealLog, MealItem
 from usda import search_food, get_food_details
 from datetime import datetime, date as date_type
-from nutrition import get_daily_totals, get_rolling_average, calculate_bmi
+from nutrition import get_daily_totals, get_rolling_average, calculate_bmi, calculate_bmr, calculate_tdee
 import requests
 
 app = Flask(__name__)
@@ -76,30 +76,73 @@ def logout():
 def dashboard():
     return render_template('dashboard.html', user=current_user)
 
+PERSONAL_INFO_FIELDS = ('gender', 'age', 'unit_system', 'weight', 'height', 'activity_level')
+PERSONAL_INFO_CHOICES = {
+    'gender': {'male', 'female'},
+    'unit_system': {'metric', 'imperial'},
+    'activity_level': {'sedentary', 'lightly_active', 'moderately_active', 'very_active'},
+}
+
 @app.route('/personal-info', methods=['GET', 'POST'])
 @login_required
 def personal_info():
     bmi = None
-    selected_unit = "metric"
-    if request.method == 'POST':
-        weight = float(request.form['weight'])
-        height = float(request.form['height'])
-        unit = request.form.get('unit_system', 'metric')
-        selected_unit = unit
+    selected_unit = 'metric'
+    gender = age = weight = height = activity_level = ''
 
-        if unit == 'imperial':
-            weight_kg = weight * 0.453592
-            height_m = height * 0.0254
+    if request.method == 'POST':
+        # Every field is required, and each must be submitted exactly once, so a
+        # radio group can't carry more than one choice (the browser enforces this
+        # too, but requests can be crafted by hand).
+        values = {}
+        for field in PERSONAL_INFO_FIELDS:
+            submitted = [v.strip() for v in request.form.getlist(field)]
+            if not submitted or not submitted[0]:
+                flash('All fields are required.')
+                return redirect(url_for('personal_info'))
+            if len(submitted) > 1:
+                flash(f"Please select only one option for {field.replace('_', ' ')}.")
+                return redirect(url_for('personal_info'))
+            values[field] = submitted[0]
+
+        for field, choices in PERSONAL_INFO_CHOICES.items():
+            if values[field] not in choices:
+                flash(f"Invalid selection for {field.replace('_', ' ')}.")
+                return redirect(url_for('personal_info'))
+
+        try:
+            age_value = int(values['age'])
+            weight_value = float(values['weight'])
+            height_value = float(values['height'])
+        except ValueError:
+            flash('Age must be a whole number, and weight and height must be numbers.')
+            return redirect(url_for('personal_info'))
+
+        if not 1 <= age_value <= 120:
+            flash('Age must be between 1 and 120.')
+            return redirect(url_for('personal_info'))
+
+        selected_unit = values['unit_system']
+        if selected_unit == 'imperial':
+            weight_kg = weight_value * 0.453592
+            height_m = height_value * 0.0254
         else:
-            weight_kg = weight
-            height_m = height
+            weight_kg = weight_value
+            height_m = height_value
 
         try:
             bmi = calculate_bmi(weight_kg, height_m)
         except AssertionError:
             flash('Invalid weight or height values. Please ensure they are within reasonable ranges.')
             return redirect(url_for('personal_info'))
-    return render_template('personal_info.html', bmi=bmi, selected_unit=selected_unit)
+
+        # Hand the submitted values back so the form keeps them
+        gender, activity_level = values['gender'], values['activity_level']
+        age, weight, height = age_value, weight_value, height_value
+
+    return render_template('personal_info.html', bmi=bmi, selected_unit=selected_unit,
+                           gender=gender, age=age, weight=weight, height=height,
+                           activity_level=activity_level)
 
 @app.route('/log/search')
 @login_required
@@ -177,28 +220,45 @@ def add_food(fdc_id):
     flash(f"Added {item.food_name} to today's log")
     return redirect(url_for('dashboard'))
 
+MAX_AVERAGE_DAYS = 365
+
+def summary_context(parsed_date):
+    """Everything summary.html needs to render one day's totals and items."""
+    totals = get_daily_totals(current_user.id, parsed_date)
+    meal_log = MealLog.query.filter_by(user_id=current_user.id, date=parsed_date).first()
+    items = meal_log.items if meal_log else []
+    return {'totals': totals, 'date': parsed_date, 'items': items}
+
 @app.route('/log/summary')
 @app.route('/log/summary/<log_date>')
 @login_required
 def daily_summary(log_date=None):
-    parsed_date = datetime.strptime(log_date, '%Y-%m-%d').date() if log_date else date_type.today()
-    totals = get_daily_totals(current_user.id, parsed_date)
-    meal_log = MealLog.query.filter_by(user_id=current_user.id, date=parsed_date).first()
-    if meal_log:
-        items = meal_log.items
-    else:
-        items = []
-    return render_template('summary.html', totals=totals, date=parsed_date, items=items)
+    try:
+        parsed_date = datetime.strptime(log_date, '%Y-%m-%d').date() if log_date else date_type.today()
+    except ValueError:
+        flash('Dates must look like YYYY-MM-DD.')
+        return redirect(url_for('daily_summary'))
+    return render_template('summary.html', **summary_context(parsed_date))
 
+@app.route('/log/summary/average')
 @app.route('/log/summary/average/<int:days>')
 @login_required
-def rolling_average(days):
-    if days <= 0:
-        flash ('Days must be a positive integer')
+def rolling_average(days=None):
+    # The form sends ?days=N; the path form /average/N also works
+    if days is None:
+        try:
+            days = int(request.args.get('days', ''))
+        except ValueError:
+            days = 0
+    if not 1 <= days <= MAX_AVERAGE_DAYS:
+        flash(f'Days must be a whole number from 1 to {MAX_AVERAGE_DAYS}.')
         return redirect(url_for('daily_summary'))
 
     averages = get_rolling_average(current_user.id, days)
-    return render_template('summary.html', averages=averages, num_days=days)
+    if not any(averages.values()):
+        averages = None  # nothing logged in that window
+    return render_template('summary.html', averages=averages, num_days=days,
+                           **summary_context(date_type.today()))
 
 def delete_meal_item(item_id, user_id):
     item = MealItem.query.get(item_id)
