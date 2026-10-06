@@ -4,8 +4,13 @@
 
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: Arial, Helvetica, sans-serif;
     background-color: #f0f0f0;
+}
+
+/* Form controls don't inherit the page font by default */
+input, button, select, textarea {
+    font-family: inherit;
 }
 
 main, .container {
@@ -19,17 +24,23 @@ main, .container {
 
 nav {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
+    gap: 16px;
     padding: 16px 24px;
     background-color: #333;
     color: #fff;
 }
 
+/* Divider between neighbouring nav items */
+nav > * + * {
+    border-left: 1px solid rgba(255, 255, 255, 0.4);
+    padding-left: 16px;
+}
+
 nav a {
     color: #fff;
     text-decoration: none;
-    margin-left: 12px;
 }
 
 nav a:hover {
@@ -49,9 +60,20 @@ nav a:hover {
 
 #dashboard-hello {
     background: #E0DEBF;
+    padding: 20px;
+    border-radius: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
     h1 {
-        font-family:'Courier New', Courier, monospace;
+        flex-basis: 100%;
+        margin-bottom: 8px;
     }
+}
+
+.auth-page {
+    text-align: center;
 }
 
 #food-search {
@@ -136,7 +158,6 @@ button:hover {
     color: white;
     text-decoration: none;
     border-radius: 5px;
-    font-family: sans-serif;
     text-align: center;
 }
 
