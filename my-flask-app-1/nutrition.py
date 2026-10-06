@@ -68,3 +68,74 @@ def calculate_tdee(bmr, activity_level):
         return bmr * 1.55
     else: # 'very_active'
         return bmr * 1.725
+
+# Lowest daily intake generally advised without medical supervision
+MIN_DAILY_CALORIES = {'male': 1500, 'female': 1200}
+KCAL_PER_KG = 7700  # approximate energy in 1 kg of body weight
+
+def bmi_category(bmi):
+    """Standard adult BMI categories."""
+    if bmi < 18.5:
+        return 'Underweight'
+    if bmi < 25:
+        return 'Normal weight'
+    if bmi < 30:
+        return 'Overweight'
+    return 'Obesity'
+
+def _round_to_10(value):
+    return int(round(value / 10) * 10)
+
+def _weekly_change_kg(daily_calories_difference):
+    return round(abs(daily_calories_difference) * 7 / KCAL_PER_KG, 2)
+
+def calorie_suggestions(tdee, gender, age, bmi):
+    """Daily calorie ranges for maintaining, losing, and gaining weight, based on TDEE.
+
+    Returns {'maintain': {...}, 'lose': {...} or None, 'gain': {...} or None, 'notes': [...]}.
+    Each range has 'low'/'high' calories and, for lose/gain, the expected weekly change in kg.
+    Losing is withheld for minors, underweight BMI, or when it would drop below the safe minimum;
+    gaining is withheld for minors. `notes` explains anything withheld or adjusted.
+    """
+    notes = []
+    maintain = {'low': _round_to_10(tdee * 0.95), 'high': _round_to_10(tdee * 1.05)}
+    result = {'maintain': maintain, 'lose': None, 'gain': None, 'notes': notes}
+
+    if age < 18:
+        notes.append('These estimates are designed for adults. If you are under 18, talk to a doctor '
+                     'before changing your calorie intake to lose or gain weight.')
+        return result
+
+    floor = MIN_DAILY_CALORIES[gender]
+    category = bmi_category(bmi)
+
+    # Losing: 250-750 calories/day below TDEE, never below the safe minimum
+    lose_high = _round_to_10(tdee - 250)
+    if category == 'Underweight':
+        notes.append('Your BMI is in the underweight range, so a calorie deficit is not recommended.')
+    elif lose_high <= floor:
+        notes.append(f'Your maintenance calories are close to the {floor:,} calories/day minimum generally '
+                     'advised without medical supervision, so a calorie deficit is not suggested.')
+    else:
+        lose_low = max(_round_to_10(tdee - 750), floor)
+        if lose_low == floor and _round_to_10(tdee - 750) < floor:
+            notes.append(f'The lower end of the weight-loss range is held at {floor:,} calories/day, '
+                         'the minimum generally advised without medical supervision.')
+        result['lose'] = {
+            'low': lose_low, 'high': lose_high,
+            'kg_week_low': _weekly_change_kg(tdee - lose_high),
+            'kg_week_high': _weekly_change_kg(tdee - lose_low),
+        }
+
+    # Gaining: 250-500 calories/day above TDEE
+    gain_low, gain_high = _round_to_10(tdee + 250), _round_to_10(tdee + 500)
+    result['gain'] = {
+        'low': gain_low, 'high': gain_high,
+        'kg_week_low': _weekly_change_kg(gain_low - tdee),
+        'kg_week_high': _weekly_change_kg(gain_high - tdee),
+    }
+    if category in ('Overweight', 'Obesity'):
+        notes.append('Your BMI is above the normal range, so weight gain is generally not advised unless a '
+                     'healthcare professional recommends it (for example, to build muscle).')
+
+    return result

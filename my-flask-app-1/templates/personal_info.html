@@ -47,23 +47,108 @@
         </fieldset>
         <button type="submit">Update</button>
     </form>
-    <div id="bmi-display">
+    <div id="bmi-display" class="result-block">
         {% if bmi is not none %}
             <h2>Your BMI: {{ bmi }}</h2>
-            <p>Category: 
-                {% if bmi < 18.5 %}
-                    Underweight
-                {% elif bmi < 24.9 %}
-                    Normal weight
-                {% elif bmi < 29.9 %}
-                    Overweight
-                {% else %}
-                    Obesity
-                {% endif %}
-            </p>
+            <p>Category: {{ bmi_category }}</p>
         {% else %}
             <p>Please enter valid weight and height to calculate BMI.</p>
         {% endif %}
+    </div>
+    <div id="bmr-display" class="result-block">
+        {% if bmr is not none %}
+            <h2>Your estimated BMR: {{ '{:,}'.format(bmr) }} calories/day</h2>
+            <p>This is roughly how many calories your body burns at rest.</p>
+        {% else %}
+            <p>Submit the form to see your estimated resting calorie burn (BMR).</p>
+        {% endif %}
+    </div>
+    <div id="tdee-display" class="result-block">
+        {% if tdee is not none %}
+            <h2>Your estimated TDEE: {{ '{:,}'.format(tdee) }} calories/day</h2>
+            <p>This is roughly how many calories you burn per day, including your activity level.</p>
+        {% else %}
+            <p>Submit the form to see your estimated daily calorie needs (TDEE).</p>
+        {% endif %}
+    </div>
+
+    {% if suggestions %}
+    {% set use_lbs = selected_unit == 'imperial' %}
+    {% macro weekly(low, high) -%}
+        {%- if use_lbs -%}
+            {{ '%.1f'|format(low * 2.20462) }}&ndash;{{ '%.1f'|format(high * 2.20462) }} lb
+        {%- else -%}
+            {{ '%.2f'|format(low) }}&ndash;{{ '%.2f'|format(high) }} kg
+        {%- endif -%}
+    {%- endmacro %}
+    <div id="calorie-suggestions" class="result-block">
+        <h2>Calorie Suggestions</h2>
+        <div class="suggestion-cards">
+            {% if suggestions.lose %}
+            <div class="suggestion-card" id="suggest-lose">
+                <h3>Lose weight</h3>
+                <p class="suggestion-range">{{ '{:,}'.format(suggestions.lose.low) }}&ndash;{{ '{:,}'.format(suggestions.lose.high) }}</p>
+                <p>calories/day</p>
+                <p class="suggestion-rate">About {{ weekly(suggestions.lose.kg_week_low, suggestions.lose.kg_week_high) }} lost per week</p>
+            </div>
+            {% endif %}
+            <div class="suggestion-card" id="suggest-maintain">
+                <h3>Maintain weight</h3>
+                <p class="suggestion-range">{{ '{:,}'.format(suggestions.maintain.low) }}&ndash;{{ '{:,}'.format(suggestions.maintain.high) }}</p>
+                <p>calories/day</p>
+                <p class="suggestion-rate">Weight stays roughly steady</p>
+            </div>
+            {% if suggestions.gain %}
+            <div class="suggestion-card" id="suggest-gain">
+                <h3>Gain weight</h3>
+                <p class="suggestion-range">{{ '{:,}'.format(suggestions.gain.low) }}&ndash;{{ '{:,}'.format(suggestions.gain.high) }}</p>
+                <p>calories/day</p>
+                <p class="suggestion-rate">About {{ weekly(suggestions.gain.kg_week_low, suggestions.gain.kg_week_high) }} gained per week</p>
+            </div>
+            {% endif %}
+        </div>
+        {% for note in suggestions.notes %}
+            <p class="suggestion-note">{{ note }}</p>
+        {% endfor %}
+        <p class="suggestion-note">These are estimates, not medical advice. Check with a doctor or dietitian before making big changes to how you eat.</p>
+    </div>
+    {% endif %}
+
+    <div id="calculation-info">
+        <h2>How these numbers are calculated</h2>
+
+        <h3>BMI (Body Mass Index)</h3>
+        <p>Your weight in kilograms divided by your height in metres, squared.</p>
+        <p class="formula">BMI = weight (kg) &divide; height (m)&sup2;</p>
+        <p>If you choose imperial units, your entries are first converted: 1 lb = 0.453592 kg and 1 in = 0.0254 m.
+           The categories are: Underweight below 18.5, Normal weight 18.5&ndash;24.9, Overweight 25&ndash;29.9,
+           and Obesity 30 or above. BMI doesn't tell muscle from fat, so treat it as a rough guide.</p>
+
+        <h3>BMR (Basal Metabolic Rate)</h3>
+        <p>The calories your body burns at rest, estimated with the Mifflin-St Jeor equation.</p>
+        <p class="formula">BMR = 10 &times; weight (kg) + 6.25 &times; height (cm) &minus; 5 &times; age (years) + 5 &nbsp;(male)<br>
+           BMR = 10 &times; weight (kg) + 6.25 &times; height (cm) &minus; 5 &times; age (years) &minus; 161 &nbsp;(female)</p>
+
+        <h3>TDEE (Total Daily Energy Expenditure)</h3>
+        <p>Your BMR multiplied by a factor for how active you are.</p>
+        <p class="formula">TDEE = BMR &times; activity factor</p>
+        <ul>
+            <li>Sedentary: &times; 1.2</li>
+            <li>Lightly active: &times; 1.375</li>
+            <li>Moderately active: &times; 1.55</li>
+            <li>Very active: &times; 1.725</li>
+        </ul>
+
+        <h3>Calorie suggestions</h3>
+        <p>All ranges are built from your TDEE and rounded to the nearest 10 calories.</p>
+        <ul>
+            <li><strong>Maintain:</strong> your TDEE &plusmn; 5%.</li>
+            <li><strong>Lose:</strong> 250&ndash;750 calories below your TDEE, which works out to roughly 0.2&ndash;0.7 kg
+                (0.5&ndash;1.5 lb) per week at about 7,700 calories per kg. It never goes below 1,500 calories/day for men or
+                1,200 for women, and it isn't suggested if your BMI is underweight or you are under 18.</li>
+            <li><strong>Gain:</strong> 250&ndash;500 calories above your TDEE, roughly 0.2&ndash;0.5 kg (0.5&ndash;1 lb)
+                per week. It isn't suggested if you are under 18.</li>
+        </ul>
     </div>
 </div>
 <script>

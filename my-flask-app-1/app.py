@@ -4,7 +4,8 @@ from config import Config
 from models import db, User, MealLog, MealItem
 from usda import search_food, get_food_details
 from datetime import datetime, date as date_type
-from nutrition import get_daily_totals, get_rolling_average, calculate_bmi, calculate_bmr, calculate_tdee
+from nutrition import (get_daily_totals, get_rolling_average, calculate_bmi, calculate_bmr,
+                       calculate_tdee, bmi_category, calorie_suggestions)
 import requests
 
 app = Flask(__name__)
@@ -86,7 +87,8 @@ PERSONAL_INFO_CHOICES = {
 @app.route('/personal-info', methods=['GET', 'POST'])
 @login_required
 def personal_info():
-    bmi = None
+    bmi = bmr = tdee = None
+    category = suggestions = None
     selected_unit = 'metric'
     gender = age = weight = height = activity_level = ''
 
@@ -130,17 +132,32 @@ def personal_info():
             weight_kg = weight_value
             height_m = height_value
 
+        # BMR and TDEE are calculated in metric units, so use the converted values.
+        # The calculators assert on out-of-range input, hence the AssertionError catch.
         try:
             bmi = calculate_bmi(weight_kg, height_m)
+            bmr = calculate_bmr(weight_kg, height_m, age_value, values['gender'])
+            tdee = calculate_tdee(bmr, values['activity_level'])
         except AssertionError:
             flash('Invalid weight or height values. Please ensure they are within reasonable ranges.')
             return redirect(url_for('personal_info'))
+
+        if tdee <= 0:
+            flash('Those values give an unrealistic calorie estimate. Please check your entries.')
+            return redirect(url_for('personal_info'))
+        # Whole calories/day, rounding halves up. TDEE is worked out from the unrounded BMR.
+        bmr = int(bmr + 0.5)
+        tdee = int(tdee + 0.5)
+
+        category = bmi_category(bmi)
+        suggestions = calorie_suggestions(tdee, values['gender'], age_value, bmi)
 
         # Hand the submitted values back so the form keeps them
         gender, activity_level = values['gender'], values['activity_level']
         age, weight, height = age_value, weight_value, height_value
 
-    return render_template('personal_info.html', bmi=bmi, selected_unit=selected_unit,
+    return render_template('personal_info.html', bmi=bmi, bmi_category=category, bmr=bmr, tdee=tdee,
+                           suggestions=suggestions, selected_unit=selected_unit,
                            gender=gender, age=age, weight=weight, height=height,
                            activity_level=activity_level)
 
